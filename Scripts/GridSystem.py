@@ -1,41 +1,41 @@
-class Grid:
-    nodes = []
-    def __init__(self, _size, _diameter = 1):
-        self.size = _size
-        self.diameter = _diameter
-        self.Create()
-    
-    def Create(self):
-        for x in range(self.size // self.diameter):
-            for y in range(self.size // self.diameter):
-                avgPos = self.diameter/self.size
-                node = {
-                    "xIndex": x, "yIndex": y,
-                    "wXPos": x * self.diameter + avgPos, "wYPos": y * self.diameter + avgPos,
-                    "xPos": x * self.diameter + avgPos + self.diameter/2,
-                    "yPos": y * self.diameter + avgPos + self.diameter/2
-                }
-                self.nodes.append(node)
-    
-    def NodeFromPos(self, pos):
-        diameter = self.diameter
-        perX = Clamp01((pos[0])/ self.size)
-        perY = Clamp01((pos[1])/ self.size)
+nodes = []
+size = 0
+diameter = 0
+centerPos = 0
 
-        x = int((self.size//diameter) * perX)
-        y = int((self.size//diameter) * perY)
-        return(x, y)
+def Initialize(_size, _diameter = 1):
+    global size; global diameter; global centerPos
+    size = _size
+    diameter = _diameter
+    Create()
+    centerPos = NodeFromPos((size/2, size/2)).position
 
+def Create():
+    for x in range(int(size / diameter)):
+        for y in range(int(size / diameter)):
+            avgXPos = x * diameter + diameter/size
+            avgYPos = y * diameter + diameter/size
+            nodes.append(Node((x, y), (avgXPos, avgYPos), (avgXPos + diameter/2,avgYPos + diameter/2)))
 
-grid = Grid().self
+def NodeFromPos(pos):
+    perX = Clamp01((pos[0])/ size)
+    perY = Clamp01((pos[1])/ size)
+    x = int((size//diameter) * perX)
+    y = int((size//diameter) * perY)
+    return next(node for node in nodes if node.index == (x, y))
 
-def SnapToGrid(obj, grid):
-    nodePos = grid.NodeFromPos((obj.x+obj.width/2, obj.y+obj.height/2))
-    for node in grid.nodes:
-        if node["xIndex"] == nodePos[0]:
-            if node["yIndex"] == nodePos[1]:
-                obj.x = node["xPos"]-obj.width/2
-                obj.y = node["yPos"]-obj.height/2
+def SnapToGrid(obj, pos = None):
+    if(pos == None): pos = obj.position
+    for node in nodes:
+        if(node.index == NodeFromPos(pos).index):
+            obj.position = node.position
+
+class Node:
+    def __init__(self, _index, _wPos, _pos):
+        self.index = _index
+        self.wPosition = _wPos
+        self.position = _pos
+
 
 def Clamp01(n):
     if(n >= 1):
