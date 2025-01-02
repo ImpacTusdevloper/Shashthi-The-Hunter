@@ -35,8 +35,8 @@ def NodeFromPos(pos):
     x = int((size//diameter) * perX)
     y = int((size//diameter) * perY)
 
-    if(x >= size//diameter): x = size//diameter - 1
-    if(y >= size//diameter): y = size//diameter - 1
+    '''if(x >= size//diameter): x = size//diameter - 1
+    if(y >= size//diameter): y = size//diameter - 1'''
     return next(node for node in nodes if node.index == (x, y))
 
 def SnapToGrid(obj, pos = None):

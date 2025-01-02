@@ -1,5 +1,6 @@
 import pygame
 import GridSystem as grid
+import UI as uIScript
 
 FPS = 60
 SPEED = 5
@@ -15,6 +16,7 @@ grid.Initialize(SIZE, gridDiameter)
 import GameObjects as gObj
 player = gObj.player = gObj.CreatePlayer()
 gObj.CreateBoundaries()
+uI = uIScript.UI(win, player)
 
 def Main():
     #Game loop
@@ -37,35 +39,42 @@ def Main():
 
         #SpawnEnemy
         t+=1
-        if(t > FPS*2):
+        if(t > FPS*2 and len(gObj.enemies) <= 0):
             t = 0
             gObj.SpawnEnemies.LadyBug()
         #Main logic
         player.Movement()
         CollisionDetection()
         DrawWindow()
+        uI.draw()
         pygame.display.update()
     pygame.quit()
 
 def DrawWindow():
     win.fill((0, 0, 0))
+    shakeX, shakeY = gObj.apply_screen_shake()
     #Grid System
     for node in grid.nodes:
         rect = pygame.Rect(node.wPosition[0], node.wPosition[1], gridDiameter/1.01, gridDiameter/1.01)
         pygame.draw.rect(win, (150, 150, 150), rect)
     #Enemies
     for enemy in gObj.enemies:
-        rect = pygame.Rect(enemy.wPosition[0], enemy.wPosition[1], enemy.scale, enemy.scale)
-        win.blit(enemy.sprite, (rect.x, rect.y))
+        win.blit(enemy.sprite, (enemy.rect.x + shakeX, enemy.rect.y + shakeY))
     #Player
     for part in player.parts:
-        rect = pygame.Rect(part.wPosition[0], part.wPosition[1], part.scale, part.scale)
-        win.blit(part.sprite, (rect.x, rect.y))
+        win.blit(part.sprite, (part.rect.x + shakeX, part.rect.y + shakeY))
     #Boundary
     for bound in gObj.boundaries:
-        win.blit(bound.sprite, (bound.rect.x, bound.rect.y))
+        win.blit(bound.sprite, (bound.rect.x + shakeX, bound.rect.y + shakeY))
+
     #PlayerCollider
-    pygame.draw.rect(win, (135, 245, 179), player.collider)
+    #pygame.draw.rect(win, (135, 245, 179), player.collider)
+    #BlockedDir
+    for enemy in gObj.enemies:
+        for dir in enemy.blocksFromDir:
+            if(dir == (0, 0)): continue
+            rect = pygame.Rect(enemy.wPosition[0] + dir[0]*gridDiameter, enemy.wPosition[1] + dir[1]*gridDiameter, gridDiameter/1.01, gridDiameter/1.01)
+            pygame.draw.rect(win, (168, 50, 60), rect)
     #Unwakable Nodes
     '''for node in grid.nodes:
         if(node.walkable == True): continue
@@ -73,15 +82,8 @@ def DrawWindow():
         pygame.draw.rect(win, (168, 50, 60), rect)'''
 def CollisionDetection():
     player.UpdateCollider()
-    #Boundary collision
-    for bound in gObj.boundaries:
-        if(player.collider.colliderect(bound.rect)):
-            continue
     #Enemy collision
     for enemy in gObj.enemies:
-        if(player.collider.colliderect(enemy.collider)):
-            #player.DoDamage(enemy, 1)
-            gObj.enemies.remove(enemy)
-            grid.NodeFromPos(enemy.position).walkable = True
-            player.ExtendBody()
+        if(player.collider.colliderect(enemy.rect)):
+            enemy.DoDamage()
 Main()
