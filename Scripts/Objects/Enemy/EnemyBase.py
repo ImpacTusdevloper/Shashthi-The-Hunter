@@ -3,16 +3,20 @@ import GameObjects as gObj
 grid = gObj.grid
 random = gObj.random
 lFRB = gObj.lFRB
+sprites = gObj.sprites
 
 class Base(gObj.DynObj):
-    def __init__(self, _position, _orientation, _scale, _sprite, _target = (0, 0)):
-        super().__init__(_position, _orientation, _scale, _sprite, _target)
+    def __init__(self, _position, _orientation, _scale, _animatedSprite):
+        super().__init__(_position, _orientation, _scale, _animatedSprite)
         self.pointer = 1
-        self.blocksFromDir = [0, 0]
         self.health = 1
+        self.Move()
         
     def Move(self):
-        self.UpdatePosition(grid.GetRandAvailNode().position)
+        tmp = set()
+        for enemy in gObj.enemies:
+            if(enemy != self): tmp.add(grid.NodeFromPos(enemy.position))
+        self.UpdatePosition(grid.GetRandAvailNode(tmp).position)
         self.SetOrientation()
 
     def DoDamage(self, damage = 1):
@@ -59,11 +63,27 @@ class Base(gObj.DynObj):
         self.pointer = ind
         self.UpdateOrientation(lFRB[ind])
         
-
+#!Enemy types
 class LadyBug(Base):
-    def __init__(self, _position, _orientation, _scale, _sprite = None, _target=(0, 0)):
-        _sprite = gObj.sprites.test_Head
-        super().__init__( _position, _orientation, _scale, _sprite, _target)
-        self.health = 2
+    def __init__(self, _position, _orientation, _scale):
+        _animatedSprite = sprites.AnimatedSprite("Enemies/LadyBug/", 1)
+        #?Blocked from front
+        self.blocksFromDir = [gObj.lFRB[1]]
+        super().__init__(_position, _orientation, _scale, _animatedSprite)
+        self.health = 3
+
+class Fly(Base):
+    def __init__(self, _position, _orientation, _scale):
+        _animatedSprite = sprites.AnimatedSprite("Enemies/Fly/", 1)
+        #?Blocked from left, right and back
         self.blocksFromDir = [gObj.lFRB[3], gObj.lFRB[0], gObj.lFRB[2]]
-        self.Move()
+        super().__init__(_position, _orientation, _scale, _animatedSprite)
+        self.health = 1
+
+class Spider(Base):
+    def __init__(self, _position, _orientation, _scale):
+        _animatedSprite = sprites.AnimatedSprite("Enemeis/Spider/", 1)
+        #?Blocked from left and right
+        self.blocksFromDir = [gObj.lFRB[1], gObj.lFRB[3]]
+        super().__init__(_position, _orientation, _scale, _animatedSprite)
+        self.health = 2

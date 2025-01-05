@@ -1,30 +1,71 @@
-import pygame
+import pygame, os, sys
+from os import listdir
 import GridSystem as grid
+
 
 scale = grid.diameter
 
+class AnimatedSprite():
+    def __init__(self, _path, _tickRate = 1, _pointer = 0):
+        self.path = _path
+        self.tickRate = _tickRate
+        self.pointer = _pointer
+        self.tick = 0
+        self.canAnimate = True
+        #Load Sprites
+        self.sprites = []
+        for sprite in listdir(resource_path("Sprites/" + self.path)):
+            if(sprite.endswith(".png")):
+                self.sprites.append(Loader(self.path + sprite))
+        self.curSprite = self.sprites[self.pointer]
+    
+    def Update(self):
+        if(not self.canAnimate): return
+        if(self.tick >= self.tickRate):
+            self.tick = 0
+            self.pointer += 1
+            if(self.pointer >= len(self.sprites)):
+                self.pointer = 0
+            self.curSprite = self.sprites[self.pointer]
+        self.tick += 1
+
+def Loader(path, _scale = 0):
+    global scale
+    if(_scale == 0):
+        _scale = scale
+    path = resource_path("Sprites/" + path)
+    return pygame.transform.scale(pygame.image.load(path), (_scale, _scale))
+
+def resource_path(relative_path):
+    """ Get absolute path to resource, works for dev and for PyInstaller """
+    try:
+        # PyInstaller creates a temp folder and stores path in _MEIPASS
+        base_path = sys._MEIPASS
+    except Exception:
+        base_path = os.path.abspath(".")
+
+    return os.path.join(base_path, relative_path)
 
 
 #!Testing
-Test_120x120 = pygame.transform.scale(pygame.image.load("Sprites/Test_120x120.png"), (scale, scale))
-Test_240x240 = pygame.transform.scale(pygame.image.load("Sprites/Test_240x240.png"), (scale, scale))
-Test_50x50 = pygame.transform.scale(pygame.image.load("Sprites/Test_50x50.png"), (scale, scale))
+Test_120x120 = Loader("Test/test_120x120.png")
+Test_240x240 = Loader("Test/test_240x240.png")
+Test_50x50 = Loader("Test/test_50x50.png")
 
 #Main
-test_Head = pygame.transform.scale(pygame.image.load("Sprites/test_Head.png"), (scale, scale))
-test_Body_Solid = pygame.transform.scale(pygame.image.load("Sprites/test_Body_Solid.png"), (scale, scale))
-test_Body_Dotted = pygame.transform.scale(pygame.image.load("Sprites/test_Body_Dotted.png"), (scale, scale))
-test_Tail = pygame.transform.scale(pygame.image.load("Sprites/test_Tail.png"), (scale, scale))
-test_Wall = pygame.transform.scale(pygame.image.load("Sprites/test_Wall.png"), (scale, scale))
-test_Food = pygame.transform.scale(pygame.image.load("Sprites/test_Food.png"), (scale, scale))
+test_Head = Loader("Test/test_Head.png")
+test_Body_Solid = Loader("Test/test_Body_Solid.png")
+test_Body_Dotted = Loader("Test/test_Body_Dotted.png")
+test_Tail = Loader("Test/test_Tail.png")
+test_Wall = Loader("Test/test_Wall.png")
+test_Food = Loader("Test/test_Food.png")
 
 #Squares
-test = pygame.transform.scale(pygame.image.load("Sprites/test.png"), (scale, scale))
-test01 = pygame.transform.scale(pygame.image.load("Sprites/test01.png"), (scale, scale))
-test02 = pygame.transform.scale(pygame.image.load("Sprites/test02.png"), (scale, scale))
-test03 = pygame.transform.scale(pygame.image.load("Sprites/test03.png"), (scale, scale))
-test04 = pygame.transform.scale(pygame.image.load("Sprites/test04.png"), (scale, scale))
+test = Loader("Test/test.png")
+test01 = Loader("Test/test01.png")
+test02 = Loader("Test/test02.png")
+test03 = Loader("Test/test03.png")
+test04 = Loader("Test/test04.png")
 #Circles
-testR = pygame.transform.scale(pygame.image.load("Sprites/testR.png"), (scale, scale))
-testR01 = pygame.transform.scale(pygame.image.load("Sprites/testR01.png"), (scale, scale))
-print()
+testR = Loader("Test/testR.png")
+testR01 = Loader("Test/testR01.png")

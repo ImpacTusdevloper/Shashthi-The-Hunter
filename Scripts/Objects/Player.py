@@ -4,10 +4,12 @@ import pygame
 
 grid = gObj.grid
 func = 0
-speed = 20 #!should be between 0 and 100
+speed = 18 #!should be between 0 and 100
 minValue = 1/10**2
+timesDamaged = 0
 
 class Player:
+    #!Creating PlayerObj
     def __init__(self, _scale):
         self.scale = _scale
         self.parts = []
@@ -21,19 +23,18 @@ class Player:
         #Init body
         bodyLength = 4
         orientation = (0, -1)
-        sprites = gObj.sprites
 
         #Make parts
-        head = gObj.DynObj(grid.centerPos, orientation, self.scale, sprites.test_Head)
+        head = gObj.DynObj(grid.centerPos, orientation, self.scale, self.SetSprite("Head"), grid.centerPos)
         bodies = []
-        bodies.append(gObj.DynObj(gObj.VecSum(head.position, (0, self.scale)), orientation, self.scale, sprites.test_Body_Dotted, head.position))
+        bodies.append(gObj.DynObj(gObj.VecSum(head.position, (0, self.scale)), orientation, self.scale, self.SetSprite("Body"), head.position))
         for i in range(1, bodyLength-2):
-            bodies.append(gObj.DynObj(gObj.VecSum(bodies[i-1].position, (0, self.scale)), orientation, self.scale, sprites.test_Body_Solid, bodies[i-1].position))
+            bodies.append(gObj.DynObj(gObj.VecSum(bodies[i-1].position, (0, self.scale)), orientation, self.scale, self.SetSprite("Body"), bodies[i-1].position))
 
-        tail = gObj.DynObj(gObj.VecSum(bodies[-1].position, (0, self.scale)), orientation, self.scale, sprites.test_Tail, bodies[-1].position)
+        tail = gObj.DynObj(gObj.VecSum(bodies[-1].position, (0, self.scale)), orientation, self.scale, self.SetSprite("Tail"), bodies[-1].position)
 
         #Add parts
-        self.SetTargetToForward(head)
+        self.GetForwardTarget(head)
         self.parts.append(head)
         for body in bodies:
             self.parts.append(body)
@@ -43,6 +44,7 @@ class Player:
             grid.NodeFromPos(part.position).walkable = False
         grid.NodeFromPos(self.parts[-1].position).walkable = True
 
+    #!Logic
     def Movement(self):
         if(not self.canMove or self.parts[0].position == self.parts[0].target): return
         #func defines the fraction of movement
@@ -60,6 +62,7 @@ class Player:
             part.UpdatePosition(gObj.VecSum(targetVec, part.prePos))
 
     def Input(self, event):
+        global timesDamaged
         head = self.parts[0]
         orientation = head.orientation
         changedOrientation = False
@@ -74,19 +77,22 @@ class Player:
             orientation = (0, 1); changedOrientation = True
         #Check if the player is trying to move backwards
         if(self.parts[1].orientation == gObj.VecMult(orientation, -1)): return
+        if(changedOrientation and head.orientation != orientation and timesDamaged >= 1):
+            self.WaitForInput()
+            timesDamaged = 0
 
         if(changedOrientation):
             head.UpdateOrientation(orientation)
             self.Movement()
+        if(not self.canMove and changedOrientation): self.WaitForInput(False)
 
-    
     def SnapParts(self):
         for part in self.parts:
                 grid.SnapToGrid(part, part.position)
 
     def SetTargets(self):
         head = self.parts[0]
-        self.SetTargetToForward(head)
+        self.GetForwardTarget(head)
         #!Collided with unwalkable node
         if(head.position == head.target): self.Collision(); return
         #Set target for rest of the body parts
@@ -97,7 +103,7 @@ class Player:
         grid.NodeFromPos(head.prePos).walkable = False
         grid.NodeFromPos(self.parts[-1].prePos).walkable = True
 
-    def SetTargetToForward(self, obj, raw = False):
+    def GetForwardTarget(self, obj, raw = False):
         target = grid.NodeFromPos(gObj.VecSum(gObj.VecMult(obj.orientation, obj.scale), obj.position))
         #get Raw targetposition
         if(raw): return target
@@ -108,7 +114,7 @@ class Player:
         self.Movement()
         func = 1
         tail = self.parts[-1]
-        body = gObj.DynObj(tail.position, self.parts[-2].orientation, self.scale, gObj.sprites.test_Body_Solid, self.parts[-2].position)
+        body = gObj.DynObj(tail.position, self.parts[-2].orientation, self.scale, self.SetSprite("Body"), self.parts[-2].position)
         self.parts.insert(-1, body)
         tail.target = body.position
 
@@ -132,17 +138,20 @@ class Player:
         func = 0
 
     def Collision(self):
-        target = self.SetTargetToForward(self.parts[0], True)
+        target = self.GetForwardTarget(self.parts[0], True)
         for part in self.parts[1:]:
             if(grid.NodeFromPos(part.position) == target):
                 self.RemoveParts(self.parts.index(part))
                 break
         self.TakeDamage()
-
+    
     def TakeDamage(self):
+        global timesDamaged
+        if(timesDamaged >= 1): return
         self.health -= 1
         self.WaitForInput()
         gObj.trigger_screen_shake(10)
+        timesDamaged += 1
     
     def RemoveParts(self, index):
         partsToRemove = []
@@ -154,3 +163,6 @@ class Player:
             partsToRemove.append(self.parts[i])
         for part in partsToRemove:
             self.parts.remove(part)
+    
+    def SetSprite(self, name, tickRate = 1):
+        return gObj.sprites.AnimatedSprite("Player/" + name + "/", tickRate)

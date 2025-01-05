@@ -3,6 +3,7 @@ import GridSystem as grid
 import SpriteLoader as sprites
 
 enemies = []
+animations = []
 boundaries = []
 # Screen shake parameters
 shake_duration = 0
@@ -20,16 +21,16 @@ class StaticObj:
         self.rect = pygame.Rect(self.wPosition[0], self.wPosition[1], self.scale, self.scale)
 
 class DynObj:
-    def __init__(self, _position, _orientation, _scale, _sprite, _target = (0, 0)):
+    def __init__(self, _position, _orientation, _scale, _animatedSprite = None, _target = (0, 0)):
         self.position = _position
         self.orientation = _orientation
         self.scale = _scale
-        self.sprite = _sprite
         self.target = _target
         self.wPosition = VecSum(self.position, (-self.scale/2, -self.scale/2))
         self.prePos = self.position
         self.rect = pygame.Rect(self.wPosition[0], self.wPosition[1], self.scale, self.scale)
         self.UpdatePosition(self.position)
+        self.animatedSprite = _animatedSprite
 
     def UpdatePosition(self, pos):
         self.position = pos
@@ -42,9 +43,8 @@ class DynObj:
         x = orientation[1]*self.orientation[0] - orientation[0]*self.orientation[1]
         y = orientation[0]*self.orientation[0] + orientation[1]*self.orientation[1]
         angle = -math.degrees(math.atan2(x, y))
-        self.sprite = pygame.transform.rotate(self.sprite, angle)
-        self.rect = self.sprite.get_rect(center=self.rect.center)
-
+        self.animatedSprite.curSprite = pygame.transform.rotate(self.animatedSprite.curSprite, angle)
+        self.rect = self.animatedSprite.curSprite.get_rect(center=self.rect.center)
         self.orientation = orientation
         
 class SpawnEnemies():
@@ -102,4 +102,3 @@ def MagOfVec(v):
 def NormalOfVec(v):
     if(MagOfVec(v) == 0): return (0, 0)
     return VecMult(v, 1/MagOfVec(v))
-     
