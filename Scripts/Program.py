@@ -1,4 +1,4 @@
-import pygame
+import pygame, os
 import GridSystem as grid
 import UI as uIScript
 
@@ -7,14 +7,15 @@ pygame.init()
 FPS = 60
 SPEED = 5
 infoObject = pygame.display.Info()
-SIZE = min(infoObject.current_w, infoObject.current_h)
+screenWidth = infoObject.current_w; screenHeight = infoObject.current_h
+SIZE = min(screenWidth, screenHeight)
 #17x17 grid(diameter = size/divisions)
 gridDiameter = (SIZE-1/10**10)/17
-inputDelay = 0.08
-win = pygame.display.set_mode((SIZE,SIZE))
-pygame.display.set_caption("Shashthi The Hunter")
+inputDelay = 0.01
+win = pygame.display.set_mode((SIZE,SIZE), pygame.FULLSCREEN)
+pygame.display.set_caption("STH")
 #No of nodes = size/diameter
-grid.Initialize(SIZE, gridDiameter)
+grid.Initialize(SIZE, (screenWidth, screenHeight), gridDiameter)
 #Creating GameObjects
 import GameObjects as gObj
 player = gObj.player = gObj.CreatePlayer()
@@ -22,7 +23,7 @@ gObj.CreateBoundaries()
 uI = uIScript.UI(win, player)
 
 def Main():
-    #Game loop
+    #?Game loop
     clock = pygame.time.Clock()
     player.WaitForInput()
     run = True; num = 0; t = 0
@@ -36,19 +37,32 @@ def Main():
                 num = 0
                 player.Input(event)
                 
-        #SpawnEnemy
+        #?SpawnEnemy
         if(len(gObj.enemies) <= 1):
             t+=1
             if(t > FPS*2):
                 t = 0
                 gObj.SpawnEnemies.LadyBug()
-        #Main logic
+        #?Main logic
         player.Movement()
-        CollisionDetection()
-        #Animation
+        #?Animation
         for animation in gObj.animations:
             animation.Update()
-        #Drawing
+        #?Collision Delay
+        if(player.damageDelay > 0):
+            head = player.parts[0]
+            player.damageDelay -= 1
+            if(player.damageDelay <= 0 and head.position == head.target):
+                player.Collision()
+        if(player.enemyHitDelay > 0):
+            head = player.parts[0]
+            player.enemyHitDelay -= 1
+            if(player.enemyHitDelay <= 0):
+                for enemy in gObj.enemies:
+                    if(grid.NodeFromPos(enemy.position).position == head.target):
+                        enemy.DoDamage()
+
+        #?Drawing
         DrawWindow()
         uI.draw()
         pygame.display.update()
@@ -85,10 +99,4 @@ def DrawWindow():
         if(node.walkable == True): continue
         rect = pygame.Rect(node.wPosition[0], node.wPosition[1], gridDiameter/1.01, gridDiameter/1.01)
         pygame.draw.rect(win, (168, 50, 60), rect)'''
-def CollisionDetection():
-    player.UpdateCollider()
-    #Enemy collision
-    for enemy in gObj.enemies:
-        if(player.collider.colliderect(enemy.rect)):
-            enemy.DoDamage()
 Main()

@@ -31,6 +31,8 @@ class DynObj:
         self.rect = pygame.Rect(self.wPosition[0], self.wPosition[1], self.scale, self.scale)
         self.UpdatePosition(self.position)
         self.animatedSprite = _animatedSprite
+        self.animatedSprite.obj = self
+        animations.append(self.animatedSprite)
 
     def UpdatePosition(self, pos):
         self.position = pos
@@ -40,16 +42,20 @@ class DynObj:
     def UpdateOrientation(self, orientation, forced = False):
         #?No change in orientation
         if(self.orientation == orientation and not forced): return
-        x = orientation[1]*self.orientation[0] - orientation[0]*self.orientation[1]
-        y = orientation[0]*self.orientation[0] + orientation[1]*self.orientation[1]
-        angle = -math.degrees(math.atan2(x, y))
-        self.animatedSprite.curSprite = pygame.transform.rotate(self.animatedSprite.curSprite, angle)
-        self.rect = self.animatedSprite.curSprite.get_rect(center=self.rect.center)
+        angle = GetAngleFromVector(self.orientation, orientation)
+        self.UpdateSpriteRotation(angle)
         self.orientation = orientation
-        
+    def UpdateSpriteRotation(self, angle, curSprite = None):
+        tmp = []
+        for sprite in self.animatedSprite.sprites:
+            tmp.append(pygame.transform.rotate(sprite, angle))
+        self.animatedSprite.sprites = tmp
+        self.animatedSprite.curSprite = self.animatedSprite.sprites[self.animatedSprite.pointer]
+        self.rect = self.animatedSprite.curSprite.get_rect(center=self.rect.center)
+
 class SpawnEnemies():
     def LadyBug():
-        import Objects.Enemy.EnemyBase as enemy
+        import Objects.EnemyBase as enemy
         ladyBug = enemy.LadyBug((0, 0), lFRB[1], grid.diameter)
         enemies.append(ladyBug)
 
@@ -79,6 +85,12 @@ def trigger_screen_shake(duration):
     shake_duration = duration
 
 #Mathematical functions
+def GetAngleFromVector(v1, v2):
+        x = v2[1]*v1[0] - v2[0]*v1[1]
+        y = v2[0]*v1[0] + v2[1]*v1[1]
+        angle = -math.degrees(math.atan2(x, y))
+        return angle
+
 def ExponentialFunc(x, pow = 2):
         return x**pow
 

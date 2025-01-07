@@ -16,6 +16,8 @@ class Base(gObj.DynObj):
         tmp = set()
         for enemy in gObj.enemies:
             if(enemy != self): tmp.add(grid.NodeFromPos(enemy.position))
+        for part in gObj.player.parts:
+            tmp.add(grid.NodeFromPos(part.position))
         self.UpdatePosition(grid.GetRandAvailNode(tmp).position)
         self.SetOrientation()
 
@@ -66,7 +68,7 @@ class Base(gObj.DynObj):
 #!Enemy types
 class LadyBug(Base):
     def __init__(self, _position, _orientation, _scale):
-        _animatedSprite = sprites.AnimatedSprite("Enemies/LadyBug/", 1)
+        _animatedSprite = sprites.AnimatedSprite("Enemies/LadyBug/", 60)
         #?Blocked from front
         self.blocksFromDir = [gObj.lFRB[1]]
         super().__init__(_position, _orientation, _scale, _animatedSprite)

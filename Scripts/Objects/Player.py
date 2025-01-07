@@ -4,7 +4,7 @@ import pygame
 
 grid = gObj.grid
 func = 0
-speed = 18 #!should be between 0 and 100
+speed = 15 #!should be between 0 and 100
 minValue = 1/10**2
 timesDamaged = 0
 
@@ -17,7 +17,8 @@ class Player:
         colScale = self.scale/2
         self.canMove = True
         self.health = 9
-        self.collider = pygame.Rect(0, 0, colScale, colScale)
+        self.damageDelay = 0
+        self.enemyHitDelay = 0
 
     def InitBody(self):
         #Init body
@@ -39,10 +40,6 @@ class Player:
         for body in bodies:
             self.parts.append(body)
         self.parts.append(tail)
-
-        for part in self.parts:
-            grid.NodeFromPos(part.position).walkable = False
-        grid.NodeFromPos(self.parts[-1].position).walkable = True
 
     #!Logic
     def Movement(self):
@@ -67,24 +64,27 @@ class Player:
         orientation = head.orientation
         changedOrientation = False
         #Changing orientation if possible
-        if(event.key == pygame.K_LEFT):
+        key = event.key
+        if key in [pygame.K_LEFT, pygame.K_a]:
             orientation = (-1, 0); changedOrientation = True
-        elif(event.key == pygame.K_RIGHT):
+        elif key in [pygame.K_RIGHT, pygame.K_d]:
             orientation = (1, 0); changedOrientation = True
-        if(event.key == pygame.K_UP):
+        elif key in [pygame.K_UP, pygame.K_w]:
             orientation = (0, -1); changedOrientation = True
-        elif(event.key == pygame.K_DOWN):
+        elif key in [pygame.K_DOWN, pygame.K_s]:
             orientation = (0, 1); changedOrientation = True
         #Check if the player is trying to move backwards
         if(self.parts[1].orientation == gObj.VecMult(orientation, -1)): return
         if(changedOrientation and head.orientation != orientation and timesDamaged >= 1):
             self.WaitForInput()
             timesDamaged = 0
+        if(not self.canMove and changedOrientation): self.WaitForInput(False)
 
         if(changedOrientation):
             head.UpdateOrientation(orientation)
             self.Movement()
-        if(not self.canMove and changedOrientation): self.WaitForInput(False)
+            if(head.position == head.target):
+                self.SetTargets()
 
     def SnapParts(self):
         for part in self.parts:
@@ -94,20 +94,27 @@ class Player:
         head = self.parts[0]
         self.GetForwardTarget(head)
         #!Collided with unwalkable node
-        if(head.position == head.target): self.Collision(); return
-        #Set target for rest of the body parts
+        if(head.position == head.target and self.damageDelay<=0): 
+            self.damageDelay = 5
+            return
+        #!Collided with enemy
+        for enemy in gObj.enemies:
+            if(grid.NodeFromPos(enemy.position).position == head.target):
+                self.enemyHitDelay = 1
+        #?Set target for rest of the body parts
         for i in range(len(self.parts[1:]), 0, -1):
             self.parts[i].target = grid.NodeFromPos(self.parts[i-1].position).position
             self.parts[i].UpdateOrientation(self.parts[i-1].orientation)
-        #Updating grid conditions
-        grid.NodeFromPos(head.prePos).walkable = False
-        grid.NodeFromPos(self.parts[-1].prePos).walkable = True
 
     def GetForwardTarget(self, obj, raw = False):
         target = grid.NodeFromPos(gObj.VecSum(gObj.VecMult(obj.orientation, obj.scale), obj.position))
-        #get Raw targetposition
+        #get Raw targetPosition
         if(raw): return target
-        if(target.walkable == False): target = obj; 
+        selfCollision = False
+        for part in self.parts[1:]:
+            if(target == grid.NodeFromPos(part.position)):
+                selfCollision = True
+        if(target.walkable == False or selfCollision): target = obj; 
         obj.target = target.position
 
     def ExtendBody(self):
@@ -117,11 +124,6 @@ class Player:
         body = gObj.DynObj(tail.position, self.parts[-2].orientation, self.scale, self.SetSprite("Body"), self.parts[-2].position)
         self.parts.insert(-1, body)
         tail.target = body.position
-
-    def UpdateCollider(self):
-        head = self.parts[0]
-        pos = gObj.VecSum(head.position, gObj.VecMult(head.orientation, head.scale/3))
-        self.collider.center = pos
 
     def WaitForInput(self, do = True):
         if(do): self.canMove = False
@@ -155,14 +157,13 @@ class Player:
     
     def RemoveParts(self, index):
         partsToRemove = []
-        grid.NodeFromPos(self.parts[-1].position).walkable = True
+
         self.parts[-1].UpdatePosition(self.parts[index-1].position)
         self.parts[-1].target = self.parts[index-1].position
         for i in range(index-1, len(self.parts)-1):
-            grid.NodeFromPos(self.parts[i].position).walkable = True
             partsToRemove.append(self.parts[i])
         for part in partsToRemove:
             self.parts.remove(part)
     
-    def SetSprite(self, name, tickRate = 1):
+    def SetSprite(self, name, tickRate = 30):
         return gObj.sprites.AnimatedSprite("Player/" + name + "/", tickRate)

@@ -2,12 +2,12 @@ import pygame, os, sys
 from os import listdir
 import GridSystem as grid
 
-
 scale = grid.diameter
 
 class AnimatedSprite():
     def __init__(self, _path, _tickRate = 1, _pointer = 0):
         self.path = _path
+        self.obj = None
         self.tickRate = _tickRate
         self.pointer = _pointer
         self.tick = 0
@@ -21,13 +21,13 @@ class AnimatedSprite():
     
     def Update(self):
         if(not self.canAnimate): return
+        self.tick += 1
         if(self.tick >= self.tickRate):
             self.tick = 0
             self.pointer += 1
             if(self.pointer >= len(self.sprites)):
                 self.pointer = 0
             self.curSprite = self.sprites[self.pointer]
-        self.tick += 1
 
 def Loader(path, _scale = 0):
     global scale
