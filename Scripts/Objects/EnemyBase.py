@@ -31,7 +31,6 @@ class Base(gObj.DynObj):
         self.Move()
 
     def Death(self):
-        grid.NodeFromPos(self.position).walkable = True
         gObj.player.ExtendBody()
         gObj.enemies.remove(self)
 
@@ -68,7 +67,7 @@ class Base(gObj.DynObj):
 #!Enemy types
 class LadyBug(Base):
     def __init__(self, _position, _orientation, _scale):
-        _animatedSprite = sprites.AnimatedSprite("Enemies/LadyBug/", 60)
+        _animatedSprite = sprites.AnimatedSprite("Enemies/LadyBug/", 30)
         #?Blocked from front
         self.blocksFromDir = [gObj.lFRB[1]]
         super().__init__(_position, _orientation, _scale, _animatedSprite)
@@ -76,7 +75,7 @@ class LadyBug(Base):
 
 class Fly(Base):
     def __init__(self, _position, _orientation, _scale):
-        _animatedSprite = sprites.AnimatedSprite("Enemies/Fly/", 1)
+        _animatedSprite = sprites.AnimatedSprite("Enemies/Fly/", 3)
         #?Blocked from left, right and back
         self.blocksFromDir = [gObj.lFRB[3], gObj.lFRB[0], gObj.lFRB[2]]
         super().__init__(_position, _orientation, _scale, _animatedSprite)
@@ -84,7 +83,7 @@ class Fly(Base):
 
 class Spider(Base):
     def __init__(self, _position, _orientation, _scale):
-        _animatedSprite = sprites.AnimatedSprite("Enemeis/Spider/", 1)
+        _animatedSprite = sprites.AnimatedSprite("Enemies/Spider/", 1)
         #?Blocked from left and right
         self.blocksFromDir = [gObj.lFRB[1], gObj.lFRB[3]]
         super().__init__(_position, _orientation, _scale, _animatedSprite)

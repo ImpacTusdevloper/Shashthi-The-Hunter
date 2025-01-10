@@ -14,7 +14,8 @@ class AnimatedSprite():
         self.canAnimate = True
         #Load Sprites
         self.sprites = []
-        for sprite in listdir(resource_path("Sprites/" + self.path)):
+        spriteFiles = sorted(os.listdir(resource_path("Sprites/" + self.path)))
+        for sprite in spriteFiles:
             if(sprite.endswith(".png")):
                 self.sprites.append(Loader(self.path + sprite))
         self.curSprite = self.sprites[self.pointer]

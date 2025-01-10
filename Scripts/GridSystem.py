@@ -4,16 +4,13 @@ nodes = []
 size = 0; wSize = 0
 diameter = 0
 centerPos = 0
-
+notWalkable = set()
 class Node:
     def __init__(self, _index, _wPos, _pos):
         self.index = _index
         self.wPosition = _wPos
         self.position = _pos
         self.walkable = True
-
-    def IsWalkable(self, b):
-        self.walkable = b
 
 def Initialize(_size, _wSize, _diameter = 1):
     global size; global wSize; global diameter; global centerPos
@@ -34,12 +31,12 @@ def Create():
 
 def NodeFromPos(pos):
     wTopLeft = next(node for node in nodes if node.index == (0, 0)).position
-    perX = Clamp01((pos[0]-wTopLeft[0])/ size)
-    perY = Clamp01((pos[1]-wTopLeft[1])/size)
-    x = int((size//diameter) * perX +1)
-    y = int((size//diameter) * perY +1)
-    x = min(max(x, 0), int(size // diameter) - 1)
-    y = min(max(y, 0), int(size // diameter) - 1)
+    perX = Clamp01((pos[0]-wTopLeft[0] + diameter/2)/(size))
+    perY = Clamp01((pos[1]-wTopLeft[1] + diameter/2)/(size))
+    x = int(((size//diameter)) * perX)
+    y = int(((size//diameter)) * perY)
+    x = min(max(x, 0), int(size // diameter)-1)
+    y = min(max(y, 0), int(size // diameter)-1)
     return next(node for node in nodes if node.index == (x, y))
 
 def SnapToGrid(obj, pos = None):
@@ -49,10 +46,8 @@ def SnapToGrid(obj, pos = None):
             obj.UpdatePosition(node.position)
 
 def GetRandAvailNode(l = set()):
-    node = random.choice(list(set(nodes).difference(l)))
-    if(not node.walkable):
-        l.add(node)
-        node = GetRandAvailNode(l)
+    k = l | notWalkable
+    node = random.choice(list(set(nodes).difference(k)))
     return node
 
 def Clamp01(n):

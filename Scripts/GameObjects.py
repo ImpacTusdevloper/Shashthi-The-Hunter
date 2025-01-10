@@ -1,7 +1,6 @@
 import pygame, random, math
 import GridSystem as grid
 import SpriteLoader as sprites
-
 enemies = []
 animations = []
 boundaries = []
@@ -19,6 +18,7 @@ class StaticObj:
         self.sprite = _sprite
         self.wPosition = VecSum(self.position, (-self.scale/2, -self.scale/2))
         self.rect = pygame.Rect(self.wPosition[0], self.wPosition[1], self.scale, self.scale)
+        node = grid.NodeFromPos(self.position)
 
 class DynObj:
     def __init__(self, _position, _orientation, _scale, _animatedSprite = None, _target = (0, 0)):
@@ -52,12 +52,26 @@ class DynObj:
         self.animatedSprite.sprites = tmp
         self.animatedSprite.curSprite = self.animatedSprite.sprites[self.animatedSprite.pointer]
         self.rect = self.animatedSprite.curSprite.get_rect(center=self.rect.center)
-
+import Objects.EnemyBase as enemy
 class SpawnEnemies():
+    def SpawnRandEnemy():
+        num = random.choice([0, 1, 2])
+        enemyType ={
+            0: SpawnEnemies.LadyBug,
+            1: SpawnEnemies.Fly,
+            2: SpawnEnemies.Spider
+        }
+        enemyType[num]()
     def LadyBug():
-        import Objects.EnemyBase as enemy
         ladyBug = enemy.LadyBug((0, 0), lFRB[1], grid.diameter)
         enemies.append(ladyBug)
+    def Fly():
+        fly = enemy.Fly((0, 0), lFRB[1], grid.diameter)
+        enemies.append(fly)
+    def Spider():
+        spider = enemy.Spider((0, 0), lFRB[1], grid.diameter)
+        enemies.append(spider)
+
 
 #!Functions
 def CreatePlayer():
@@ -68,6 +82,7 @@ def CreateBoundaries():
     for node in grid.nodes:
         ind = node.index; maxInd = int(grid.size/grid.diameter)-1
         if ind[0] in [0, maxInd] or ind[1] in [0, maxInd]:
+            grid.notWalkable.add(node)
             node.walkable = False
             boundaries.append(StaticObj(node.position, grid.diameter, sprites.test_Wall))
 

@@ -4,7 +4,8 @@ import pygame
 
 grid = gObj.grid
 func = 0
-speed = 15 #!should be between 0 and 100
+baseSpeed = 11 #!should be between 0 and 100
+
 minValue = 1/10**2
 timesDamaged = 0
 
@@ -19,6 +20,7 @@ class Player:
         self.health = 9
         self.damageDelay = 0
         self.enemyHitDelay = 0
+        self.speed = baseSpeed
 
     def InitBody(self):
         #Init body
@@ -45,13 +47,15 @@ class Player:
     def Movement(self):
         if(not self.canMove or self.parts[0].position == self.parts[0].target): return
         #func defines the fraction of movement
-        global func; speed
+        global func; baseSpeed
+        #?Calculating speed based on bodyLength
+        self.speed = baseSpeed + len(self.parts)/10
         if(func == 0): func = minValue
-        func = gObj.AddFunc(func, speed/100)
-        #func += gObj.SmoothFunc(0.15)
-
+        func = gObj.AddFunc(func, self.speed/100)
+        #Rounding to 2 decimals
+        func = int(func*100)/100
         #Reset movement
-        if(func > 1): self.WrapUpMovement(); return
+        if(func >= 1): self.WrapUpMovement(); return
         for part in self.parts:
             targetVec = gObj.VecMult(
                 gObj.VecSum(part.target, gObj.VecMult(part.prePos, -1)), 
@@ -157,13 +161,20 @@ class Player:
     
     def RemoveParts(self, index):
         partsToRemove = []
-
-        self.parts[-1].UpdatePosition(self.parts[index-1].position)
-        self.parts[-1].target = self.parts[index-1].position
-        for i in range(index-1, len(self.parts)-1):
+        for i in range(index-1, len(self.parts)-2):
             partsToRemove.append(self.parts[i])
+        if(index in [0,1]): return
+        #if(len(self.parts) - len(partsToRemove) < 4)):
+        self.SetPartEqualTo(-2, index-1)
+        self.SetPartEqualTo(-1, index)
         for part in partsToRemove:
             self.parts.remove(part)
     
     def SetSprite(self, name, tickRate = 30):
         return gObj.sprites.AnimatedSprite("Player/" + name + "/", tickRate)
+    
+    def SetPartEqualTo(self, ind1, ind2):
+        self.parts[ind1].UpdatePosition(self.parts[ind2].position)
+        self.parts[ind1].UpdateOrientation(self.parts[ind2].orientation)
+        self.parts[ind1].target = self.parts[ind2].position
+        

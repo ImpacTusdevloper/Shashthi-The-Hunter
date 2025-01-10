@@ -28,7 +28,7 @@ def Main():
     player.WaitForInput()
     run = True; num = 0; t = 0
     while(run):
-        if(player.health <= 0): run = False #?Game Over
+        if(player.health <= 0): ResetGame() #?Game Over
         clock.tick(FPS)
         num+=1
         for event in pygame.event.get():
@@ -38,11 +38,11 @@ def Main():
                 player.Input(event)
                 
         #?SpawnEnemy
-        if(len(gObj.enemies) <= 1):
+        if(len(gObj.enemies) < 3):
             t+=1
             if(t > FPS*2):
+                gObj.SpawnEnemies.SpawnRandEnemy()
                 t = 0
-                gObj.SpawnEnemies.LadyBug()
         #?Main logic
         player.Movement()
         #?Animation
@@ -75,6 +75,9 @@ def DrawWindow():
     for node in grid.nodes:
         rect = pygame.Rect(node.wPosition[0], node.wPosition[1], gridDiameter/1.01, gridDiameter/1.01)
         pygame.draw.rect(win, (150, 150, 150), rect)
+    #Boundary
+    for bound in gObj.boundaries:
+        win.blit(bound.sprite, (bound.rect.x + shakeX, bound.rect.y + shakeY))
     #BlockedDir
     for enemy in gObj.enemies:
         for dir in enemy.blocksFromDir:
@@ -88,10 +91,6 @@ def DrawWindow():
     #Player
     for part in player.parts:
         win.blit(part.animatedSprite.curSprite, (part.rect.x + shakeX, part.rect.y + shakeY))
-    #Boundary
-    for bound in gObj.boundaries:
-        win.blit(bound.sprite, (bound.rect.x + shakeX, bound.rect.y + shakeY))
-
     #PlayerCollider
     #pygame.draw.rect(win, (135, 245, 179), player.collider)
     #Unwakable Nodes
@@ -99,4 +98,12 @@ def DrawWindow():
         if(node.walkable == True): continue
         rect = pygame.Rect(node.wPosition[0], node.wPosition[1], gridDiameter/1.01, gridDiameter/1.01)
         pygame.draw.rect(win, (168, 50, 60), rect)'''
+
+def ResetGame():
+    global player, gObj, uI
+    player = gObj.player = gObj.CreatePlayer()  # Reinitialize player
+    uI = uIScript.UI(win, player)  # Reinitialize UI
+    gObj.enemies.clear()
+    Main()  # Restart the main game loop
+
 Main()
