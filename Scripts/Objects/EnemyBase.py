@@ -14,6 +14,7 @@ class Base(gObj.DynObj):
         
     def Move(self):
         tmp = set()
+        tmp.add(gObj.player.parts[0].target)
         for enemy in gObj.enemies:
             if(enemy != self): tmp.add(grid.NodeFromPos(enemy.position))
         for part in gObj.player.parts:
@@ -21,7 +22,7 @@ class Base(gObj.DynObj):
         self.UpdatePosition(grid.GetRandAvailNode(tmp).position)
         self.SetOrientation()
 
-    def DoDamage(self, damage = 1):
+    def TakeDamage(self, damage = 1):
         if(self.CannotBlockAttack()):
             self.health -= damage
         else:
@@ -36,7 +37,7 @@ class Base(gObj.DynObj):
 
     def CannotBlockAttack(self):
         playerHead = gObj.player.parts[0]
-        vec = gObj.VecMult(gObj.NormalOfVec(gObj.VecSum(self.position, playerHead.position, -1)), -1)
+        vec = gObj.VecMult(playerHead.orientation, -1)
         for blockDir in self.blocksFromDir:
             if(blockDir == vec): return False
         return True
@@ -67,15 +68,26 @@ class Base(gObj.DynObj):
 #!Enemy types
 class LadyBug(Base):
     def __init__(self, _position, _orientation, _scale):
-        _animatedSprite = sprites.AnimatedSprite("Enemies/LadyBug/", 30)
+        self.normalSprite = sprites.AnimatedSprite("Enemies/LadyBugNormal/", 5, self)
+        self.psychoSprite = sprites.AnimatedSprite("Enemies/LadyBugPsycho/", 2, self)
         #?Blocked from front
         self.blocksFromDir = [gObj.lFRB[1]]
-        super().__init__(_position, _orientation, _scale, _animatedSprite)
+        super().__init__(_position, _orientation, _scale, self.normalSprite)
         self.health = 3
+
+    def TakeDamage(self, damage=1):
+        super().TakeDamage(damage)
+        if(self.health <= 1):
+            gObj.animations.remove(self.animatedSprite)
+            self.animatedSprite = self.psychoSprite
+            gObj.animations.append(self.animatedSprite)
+            #self.blocksFromDir = []
+            #self.UpdateSpriteRotation(gObj.GetAngleFromVector(lFRB[0], random.choice(lFRB)))
+
 
 class Fly(Base):
     def __init__(self, _position, _orientation, _scale):
-        _animatedSprite = sprites.AnimatedSprite("Enemies/Fly/", 3)
+        _animatedSprite = sprites.AnimatedSprite("Enemies/Fly/", 3, self)
         #?Blocked from left, right and back
         self.blocksFromDir = [gObj.lFRB[3], gObj.lFRB[0], gObj.lFRB[2]]
         super().__init__(_position, _orientation, _scale, _animatedSprite)
@@ -83,7 +95,7 @@ class Fly(Base):
 
 class Spider(Base):
     def __init__(self, _position, _orientation, _scale):
-        _animatedSprite = sprites.AnimatedSprite("Enemies/Spider/", 1)
+        _animatedSprite = sprites.AnimatedSprite("Enemies/Spider/", 10, self)
         #?Blocked from left and right
         self.blocksFromDir = [gObj.lFRB[1], gObj.lFRB[3]]
         super().__init__(_position, _orientation, _scale, _animatedSprite)

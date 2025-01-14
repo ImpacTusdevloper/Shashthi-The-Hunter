@@ -128,6 +128,7 @@ class Player:
         body = gObj.DynObj(tail.position, self.parts[-2].orientation, self.scale, self.SetSprite("Body"), self.parts[-2].position)
         self.parts.insert(-1, body)
         tail.target = body.position
+        gObj.score += 1
 
     def WaitForInput(self, do = True):
         if(do): self.canMove = False
@@ -164,14 +165,13 @@ class Player:
         for i in range(index-1, len(self.parts)-2):
             partsToRemove.append(self.parts[i])
         if(index in [0,1]): return
-        #if(len(self.parts) - len(partsToRemove) < 4)):
-        self.SetPartEqualTo(-2, index-1)
-        self.SetPartEqualTo(-1, index)
+        self.SetPartEqualTo(-2, index-2)
+        self.SetPartEqualTo(-1, index-1)
         for part in partsToRemove:
             self.parts.remove(part)
     
     def SetSprite(self, name, tickRate = 30):
-        return gObj.sprites.AnimatedSprite("Player/" + name + "/", tickRate)
+        return gObj.sprites.AnimatedSprite("Player/" + name + "/", tickRate, self)
     
     def SetPartEqualTo(self, ind1, ind2):
         self.parts[ind1].UpdatePosition(self.parts[ind2].position)

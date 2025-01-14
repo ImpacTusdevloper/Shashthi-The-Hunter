@@ -5,12 +5,11 @@ import UI as uIScript
 # Initialize Pygame
 pygame.init()
 FPS = 60
-SPEED = 5
 infoObject = pygame.display.Info()
 screenWidth = infoObject.current_w; screenHeight = infoObject.current_h
 SIZE = min(screenWidth, screenHeight)
 #17x17 grid(diameter = size/divisions)
-gridDiameter = (SIZE-1/10**10)/17
+gridDiameter = (SIZE-1/10**10)/15
 inputDelay = 0.01
 win = pygame.display.set_mode((SIZE,SIZE), pygame.FULLSCREEN)
 pygame.display.set_caption("STH")
@@ -20,13 +19,18 @@ grid.Initialize(SIZE, (screenWidth, screenHeight), gridDiameter)
 import GameObjects as gObj
 player = gObj.player = gObj.CreatePlayer()
 gObj.CreateBoundaries()
-uI = uIScript.UI(win, player)
+uI = uIScript.UI(win, gObj)
+background = gObj.sprites.AnimatedSprite("Background/", 300, _scale = (SIZE, SIZE))
+print(len(background.sprites))
+background.RandomizeSprites(); background.randomizeOnEnd = True
+gObj.animations.append(background)
 
 def Main():
     #?Game loop
     clock = pygame.time.Clock()
     player.WaitForInput()
     run = True; num = 0; t = 0
+
     while(run):
         if(player.health <= 0): ResetGame() #?Game Over
         clock.tick(FPS)
@@ -60,7 +64,7 @@ def Main():
             if(player.enemyHitDelay <= 0):
                 for enemy in gObj.enemies:
                     if(grid.NodeFromPos(enemy.position).position == head.target):
-                        enemy.DoDamage()
+                        enemy.TakeDamage()
 
         #?Drawing
         DrawWindow()
@@ -71,13 +75,16 @@ def Main():
 def DrawWindow():
     win.fill((0, 0, 0))
     shakeX, shakeY = gObj.apply_screen_shake()
-    #Grid System
+    pos = grid.wTopLeft.wPosition
+    rect = pygame.Rect(pos[0], pos[1], SIZE, SIZE)
+    win.blit(background.curSprite, (rect.x + shakeX, rect.y + shakeY))
+    '''#Grid System
     for node in grid.nodes:
         rect = pygame.Rect(node.wPosition[0], node.wPosition[1], gridDiameter/1.01, gridDiameter/1.01)
-        pygame.draw.rect(win, (150, 150, 150), rect)
+        pygame.draw.rect(win, (150, 150, 150), rect)'''
     #Boundary
-    for bound in gObj.boundaries:
-        win.blit(bound.sprite, (bound.rect.x + shakeX, bound.rect.y + shakeY))
+    #for bound in gObj.boundaries:
+    #    win.blit(bound.sprite, (bound.rect.x + shakeX, bound.rect.y + shakeY))
     #BlockedDir
     for enemy in gObj.enemies:
         for dir in enemy.blocksFromDir:
@@ -91,6 +98,8 @@ def DrawWindow():
     #Player
     for part in player.parts:
         win.blit(part.animatedSprite.curSprite, (part.rect.x + shakeX, part.rect.y + shakeY))
+    
+    #win.blit(gObj.sprites.test_Background, gObj.VecSum((screenWidth/2, screenHeight/2),(SIZE/2, SIZE/2), -1))
     #PlayerCollider
     #pygame.draw.rect(win, (135, 245, 179), player.collider)
     #Unwakable Nodes
@@ -102,8 +111,9 @@ def DrawWindow():
 def ResetGame():
     global player, gObj, uI
     player = gObj.player = gObj.CreatePlayer()  # Reinitialize player
-    uI = uIScript.UI(win, player)  # Reinitialize UI
+    uI = uIScript.UI(win, gObj)  # Reinitialize UI
     gObj.enemies.clear()
+    gObj.score = 0
     Main()  # Restart the main game loop
 
 Main()

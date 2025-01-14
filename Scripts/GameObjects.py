@@ -10,6 +10,8 @@ shake_intensity = 5
 #Directional vectors
 lFRB = [(-1, 0), (0, -1), (1, 0), (0, 1)]
 
+score = 0
+
 #!Classes
 class StaticObj:
     def __init__(self, _position, _scale, _sprite):
@@ -43,20 +45,23 @@ class DynObj:
         #?No change in orientation
         if(self.orientation == orientation and not forced): return
         angle = GetAngleFromVector(self.orientation, orientation)
-        self.UpdateSpriteRotation(angle)
         self.orientation = orientation
-    def UpdateSpriteRotation(self, angle, curSprite = None):
+        self.UpdateSpriteRotation(angle)
+    
+    def UpdateSpriteRotation(self, angle):
         tmp = []
         for sprite in self.animatedSprite.sprites:
             tmp.append(pygame.transform.rotate(sprite, angle))
         self.animatedSprite.sprites = tmp
+        self.animatedSprite.orientation = self.orientation
         self.animatedSprite.curSprite = self.animatedSprite.sprites[self.animatedSprite.pointer]
         self.rect = self.animatedSprite.curSprite.get_rect(center=self.rect.center)
+
 import Objects.EnemyBase as enemy
 class SpawnEnemies():
     def SpawnRandEnemy():
         num = random.choice([0, 1, 2])
-        enemyType ={
+        enemyType={
             0: SpawnEnemies.LadyBug,
             1: SpawnEnemies.Fly,
             2: SpawnEnemies.Spider
@@ -100,9 +105,9 @@ def trigger_screen_shake(duration):
     shake_duration = duration
 
 #Mathematical functions
-def GetAngleFromVector(v1, v2):
-        x = v2[1]*v1[0] - v2[0]*v1[1]
-        y = v2[0]*v1[0] + v2[1]*v1[1]
+def GetAngleFromVector(init, target):
+        x = target[1]*init[0] - target[0]*init[1]
+        y = target[0]*init[0] + target[1]*init[1]
         angle = -math.degrees(math.atan2(x, y))
         return angle
 

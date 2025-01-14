@@ -4,6 +4,7 @@ nodes = []
 size = 0; wSize = 0
 diameter = 0
 centerPos = 0
+wTopLeft = 0
 notWalkable = set()
 class Node:
     def __init__(self, _index, _wPos, _pos):
@@ -13,11 +14,12 @@ class Node:
         self.walkable = True
 
 def Initialize(_size, _wSize, _diameter = 1):
-    global size; global wSize; global diameter; global centerPos
+    global size, wSize, diameter, centerPos, wTopLeft
     size = _size
     wSize = _wSize
     diameter = _diameter
     Create()
+    wTopLeft = next(node for node in nodes if node.index == (0, 0))
     centerPos = NodeFromPos((wSize[0]/2, wSize[1]/2)).position
 
 def Create():
@@ -30,9 +32,8 @@ def Create():
             #print(f"index: {node.index} and Pos: {node.wPosition}")
 
 def NodeFromPos(pos):
-    wTopLeft = next(node for node in nodes if node.index == (0, 0)).position
-    perX = Clamp01((pos[0]-wTopLeft[0] + diameter/2)/(size))
-    perY = Clamp01((pos[1]-wTopLeft[1] + diameter/2)/(size))
+    perX = Clamp01((pos[0]-wTopLeft.position[0] + diameter/2)/(size))
+    perY = Clamp01((pos[1]-wTopLeft.position[1] + diameter/2)/(size))
     x = int(((size//diameter)) * perX)
     y = int(((size//diameter)) * perY)
     x = min(max(x, 0), int(size // diameter)-1)
