@@ -16,7 +16,7 @@ class Base(gObj.DynObj):
         tmp = set()
         tmp.add(gObj.player.parts[0].target)
         for enemy in gObj.enemies:
-            if(enemy != self): tmp.add(grid.NodeFromPos(enemy.position))
+            tmp.add(grid.NodeFromPos(enemy.position))
         for part in gObj.player.parts:
             tmp.add(grid.NodeFromPos(part.position))
         self.UpdatePosition(grid.GetRandAvailNode(tmp).position)
@@ -26,6 +26,10 @@ class Base(gObj.DynObj):
         if(self.CannotBlockAttack()):
             self.health -= damage
         else:
+            effect = sprites.SpecialEffect("Cross/", self.wPosition, 3)
+            gObj.animations.append(effect)
+            gObj.specialFx.append(effect)
+            
             self.Move()
 
         if(self.health <= 0): self.Death()
@@ -81,8 +85,8 @@ class LadyBug(Base):
             gObj.animations.remove(self.animatedSprite)
             self.animatedSprite = self.psychoSprite
             gObj.animations.append(self.animatedSprite)
-            #self.blocksFromDir = []
-            #self.UpdateSpriteRotation(gObj.GetAngleFromVector(lFRB[0], random.choice(lFRB)))
+            self.blocksFromDir = []
+            self.UpdateSpriteRotation(gObj.GetAngleFromVector(lFRB[0], random.choice(lFRB)))
 
 
 class Fly(Base):
@@ -95,7 +99,7 @@ class Fly(Base):
 
 class Spider(Base):
     def __init__(self, _position, _orientation, _scale):
-        _animatedSprite = sprites.AnimatedSprite("Enemies/Spider/", 10, self)
+        _animatedSprite = sprites.AnimatedSprite("Enemies/Spider/", 8, self)
         #?Blocked from left and right
         self.blocksFromDir = [gObj.lFRB[1], gObj.lFRB[3]]
         super().__init__(_position, _orientation, _scale, _animatedSprite)

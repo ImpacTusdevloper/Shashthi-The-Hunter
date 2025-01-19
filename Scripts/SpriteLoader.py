@@ -1,7 +1,7 @@
 import pygame, os, sys, random
 from os import listdir
 import GridSystem as grid
-from PIL import Image, ImageFilter, ImageEnhance
+from PIL import Image, ImageFilter, ImageEnhance, ImageDraw
 
 scale = grid.diameter
 
@@ -21,7 +21,7 @@ class AnimatedSprite():
 
         #Load Sprites
         self.sprites = []
-        spriteFiles = sorted(os.listdir(resource_path("Sprites/" + self.path)))
+        spriteFiles = sorted(os.listdir(resourcePath("Data/Sprites/" + self.path)))
         for sprite in spriteFiles:
             if(sprite.endswith(".png")):
                 self.sprites.append(Loader(self.path + sprite, self.scale))
@@ -29,10 +29,12 @@ class AnimatedSprite():
     
     def Update(self):
         if(not self.canAnimate): return
+        if(self.obj != None):
+            self.CorrectSpriteRotation()
+        if(len(self.sprites) <=1):
+            return
         self.tick += 1
         if(self.tick >= self.tickRate):
-            if(self.obj != None):
-                self.CorrectSpriteRotation()
 
             self.tick = 0
             self.pointer += 1
@@ -41,12 +43,15 @@ class AnimatedSprite():
                     self.pointer = 0
                     if(self.randomizeOnEnd):
                         self.RandomizeSprites()
-
                 else:
                     import GameObjects as gObj
-                    self.obj.animatedSprite = self.exitToAnimation
-                    gObj.animations.remove(self)
-                    gObj.animations.append(self.exitToAnimation)
+                    self.pointer -= 1
+                    if(self in gObj.animations):
+                        gObj.animations.remove(self)
+                    if(self.exitToAnimation != None):
+                        if(self.obj != None):
+                            self.obj.animatedSprite = self.exitToAnimation
+                        gObj.animations.append(self.exitToAnimation)
                     
             self.curSprite = self.sprites[self.pointer]
     
@@ -57,7 +62,6 @@ class AnimatedSprite():
             angle = gObj.GetAngleFromVector(self.orientation, targetOrientation)
             self.obj.UpdateSpriteRotation(angle)
 
-    
     def RandomizeSprites(self):
         random.shuffle(self.sprites)
         self.curSprite = self.sprites[self.pointer]
@@ -65,27 +69,35 @@ class AnimatedSprite():
     def SetRandomPointer(self):
         self.pointer = random.choice([0, len(self.sprites)-1])
 
+import GameObjects as gObj
+class SpecialEffect(AnimatedSprite):
+    def __init__(self, _path, _pos, _tickRate=1, _scale=(0, 0), _loop=False):
+        super().__init__(_path, _tickRate, _scale=_scale, _loop=_loop)
+        self.pos = _pos
+    def Update(self):
+        if(self.pointer >= len(self.sprites)-1):
+            gObj.specialFx.remove(self)
+            gObj.animations.remove(self)
+        return super().Update()
+
 def Loader(path, _scale = (0, 0)):
     global scale
     if(_scale == (0, 0)):
         _scale = (scale, scale)
-    path = resource_path("Sprites/" + path)
+    path = resourcePath("Data/Sprites/" + path)
     image = pygame.image.load(path).convert_alpha()  # Use convert_alpha() for better quality
     scaledImage = pygame.transform.smoothscale(image, _scale)
 
     pil_image = pygame_to_pil(scaledImage)
-       # Enhance color saturation to make the image more vibrant
-    enhancer = ImageEnhance.Color(pil_image)
-    pil_image = enhancer.enhance(1.5)  # Increase the factor to make it more vibrant
-    #pil_image = pil_image.filter(ImageFilter.SHARPEN)
-    #pil_image = pil_image.filter(ImageFilter.CONTOUR)
-    #pil_image = pil_image.filter(ImageFilter.EDGE_ENHANCE)
+    # Apply chromatic aberration effect
+    pil_image = apply_chromatic_aberration(pil_image, offset=0.6)
+
     pil_image = pil_image.filter(ImageFilter.DETAIL)
     scaledImage = pil_to_pygame(pil_image)
 
     return scaledImage
 
-def resource_path(relative_path):
+def resourcePath(relative_path):
     """ Get absolute path to resource, works for dev and for PyInstaller """
     try:
         # PyInstaller creates a temp folder and stores path in _MEIPASS
@@ -93,8 +105,32 @@ def resource_path(relative_path):
     except Exception:
         base_path = os.path.abspath(".")
 
-    return os.path.join(base_path, relative_path)
+    return os.path.join(base_path, *relative_path.split("/"))
 
+def apply_chromatic_aberration(image, offset=5):
+    # Split the image into red, green, and blue channels
+    r, g, b, a = image.split()
+    # Offset the red channel
+    r = r.transform(image.size, Image.AFFINE, (1, 0, offset, 0, 1, 0))
+    # Offset the blue channel in the opposite direction
+    b = b.transform(image.size, Image.AFFINE, (1, 0, -offset, 0, 1, 0))
+    # Merge the channels back together
+    image = Image.merge('RGBA', (r, g, b, a))
+
+    return image
+
+def apply_pixelation(image, pixel_size=10):
+    # Reduce the image size
+    small_image = image.resize(
+        (image.width // pixel_size, image.height // pixel_size),
+        resample=Image.NEAREST
+    )
+    # Scale it back up to the original size
+    pixelated_image = small_image.resize(
+        (image.width, image.height),
+        resample=Image.NEAREST
+    )
+    return pixelated_image
 def pygame_to_pil(image):
     """Convert a Pygame surface to a PIL image"""
     return Image.frombytes("RGBA", image.get_size(), pygame.image.tostring(image, "RGBA", False))
@@ -102,6 +138,8 @@ def pygame_to_pil(image):
 def pil_to_pygame(image):
     """Convert a PIL image to a Pygame surface"""
     return pygame.image.fromstring(image.tobytes(), image.size, image.mode)
+
+
 
 #!Testing
 Test_120x120 = Loader("Test/test_120x120.png")

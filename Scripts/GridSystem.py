@@ -42,9 +42,8 @@ def NodeFromPos(pos):
 
 def SnapToGrid(obj, pos = None):
     if(pos == None): pos = obj.position
-    for node in nodes:
-        if(node.index == NodeFromPos(pos).index):
-            obj.UpdatePosition(node.position)
+    node = NodeFromPos(pos)
+    obj.UpdatePosition(node.position)
 
 def GetRandAvailNode(l = set()):
     k = l | notWalkable

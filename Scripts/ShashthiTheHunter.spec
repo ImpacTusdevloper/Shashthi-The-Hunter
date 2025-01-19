@@ -7,7 +7,7 @@ a = Analysis(
     pathex=['/Users/krishkushwaha/Projects/GitHub Repos/Shashthi-The-Hunter/Scripts'],
     binaries=[],
     datas=[
-        ('/Users/krishkushwaha/Projects/GitHub Repos/Shashthi-The-Hunter/Sprites', 'Sprites')
+        ('/Users/krishkushwaha/Projects/GitHub Repos/Shashthi-The-Hunter/Data', 'Data')
     ],
     hiddenimports=[],
     hookspath=[],

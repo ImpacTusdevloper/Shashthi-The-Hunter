@@ -1,16 +1,21 @@
-import pygame, random, math
+import pygame, random, math, json, os
 import GridSystem as grid
 import SpriteLoader as sprites
+
 enemies = []
 animations = []
+specialFx = []
 boundaries = []
-# Screen shake parameters
+#Screen shake parameters
 shake_duration = 0
-shake_intensity = 5
+shake_intensity = 8
 #Directional vectors
 lFRB = [(-1, 0), (0, -1), (1, 0), (0, 1)]
 
 score = 0
+
+HIGH_SCORE_FILE = sprites.resourcePath("Data/high_score.json")
+highScore = 0
 
 #!Classes
 class StaticObj:
@@ -34,6 +39,7 @@ class DynObj:
         self.UpdatePosition(self.position)
         self.animatedSprite = _animatedSprite
         self.animatedSprite.obj = self
+        self.animatedSprite.scale = self.scale
         animations.append(self.animatedSprite)
 
     def UpdatePosition(self, pos):
@@ -81,7 +87,7 @@ class SpawnEnemies():
 #!Functions
 def CreatePlayer():
     import Objects.Player as pObj
-    return pObj.Player(grid.diameter)
+    return pObj.Player(grid.diameter * 1.02)
 
 def CreateBoundaries():
     for node in grid.nodes:
@@ -100,24 +106,42 @@ def apply_screen_shake():
         return shake_x, shake_y
     return 0, 0
 
-def trigger_screen_shake(duration):
-    global shake_duration
+def trigger_screen_shake(duration, intensity = 8):
+    global shake_duration, shake_intensity
+    shake_intensity = intensity
     shake_duration = duration
 
-#Mathematical functions
+# High score functions
+
+def load_high_score():
+    if os.path.exists(HIGH_SCORE_FILE):
+        with open(HIGH_SCORE_FILE, "r") as file:
+            data = json.load(file)
+            return data.get("high_score", 0)
+    return 0
+
+def save_high_score(high_score):
+    with open(HIGH_SCORE_FILE, "w") as file:
+        json.dump({"high_score": high_score}, file)
+
+def update_high_score():
+    global highScore
+    high_score = highScore
+    if score > high_score:
+        save_high_score(score)
+        highScore = score
+        return
+    highScore = high_score 
+
+#!Mathematical functions
 def GetAngleFromVector(init, target):
         x = target[1]*init[0] - target[0]*init[1]
         y = target[0]*init[0] + target[1]*init[1]
         angle = -math.degrees(math.atan2(x, y))
         return angle
 
-def ExponentialFunc(x, pow = 2):
-        return x**pow
-
 def AddFunc(x, const):
      return x + const
-def SmoothFunc(t):
-    return t * (2 - t)
 
 #Vector logic
 def VecSum(v1, v2, mult = 1):
