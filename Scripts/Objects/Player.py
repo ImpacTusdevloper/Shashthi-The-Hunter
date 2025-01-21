@@ -4,7 +4,7 @@ import random
 
 grid = gObj.grid
 func = 0
-baseSpeed = 11
+baseSpeed = 10
  #!should be between 0 and 100
 
 minValue = 1/10**2
@@ -56,7 +56,7 @@ class Player:
         #func defines the fraction of movement
         global func; baseSpeed
         #?Calculating speed based on bodyLength
-        self.speed = baseSpeed + len(self.parts)/9
+        self.speed = baseSpeed + len(self.parts)/5
         #Rounding to 2 decimals
         self.speed = int(self.speed*100)/100
         if(func == 0): func = minValue
