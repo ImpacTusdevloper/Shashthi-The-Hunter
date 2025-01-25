@@ -2,13 +2,23 @@ import pygame, random, math, json, os
 import GridSystem as grid
 import SpriteLoader as sprites
 
+#GameObjects
 enemies = []
 animations = []
 specialFx = []
 boundaries = []
+infoSprite = sprites.Loader("Info.png", (grid.size, grid.size))
+infoSprite.set_alpha(240)
 #Screen shake parameters
 shake_duration = 0
 shake_intensity = 8
+#Zoom parameters
+zoom_factor = 1.49
+target_zoom_in = 1.5
+target_zoom_out = 1.0
+zoom_speed = 0.01
+zoom_in = False
+zoom_triggered = False
 #Directional vectors
 lFRB = [(-1, 0), (0, -1), (1, 0), (0, 1)]
 
@@ -19,7 +29,7 @@ highScore = 0
 
 #!Classes
 class StaticObj:
-    def __init__(self, _position, _scale, _sprite):
+    def __init__(self, _position, _scale, _sprite = None):
         self.position = _position
         self.scale = _scale
         self.sprite = _sprite
@@ -95,8 +105,9 @@ def CreateBoundaries():
         if ind[0] in [0, maxInd] or ind[1] in [0, maxInd]:
             grid.notWalkable.add(node)
             node.walkable = False
-            boundaries.append(StaticObj(node.position, grid.diameter, sprites.test_Wall))
+            boundaries.append(StaticObj(node.position, grid.diameter))
 
+#?screen shake functions
 def apply_screen_shake():
     global shake_duration
     if shake_duration > 0:
@@ -110,9 +121,40 @@ def trigger_screen_shake(duration, intensity = 8):
     global shake_duration, shake_intensity
     shake_intensity = intensity
     shake_duration = duration
+#?Zoom functions
+def SmoothZoom(target_in=1.1, target_out=1.0, speed=0.03):
+    global target_zoom_in, target_zoom_out, zoom_speed, zoom_in, zoom_triggered
+    target_zoom_in = target_in
+    target_zoom_out = target_out
+    zoom_speed = speed
+    zoom_in = True  # Start by zooming in
+    zoom_triggered = True  # Set the zoom trigger
 
-# High score functions
+def UpdateZoom():
+    global zoom_factor, target_zoom_in, target_zoom_out, zoom_speed, zoom_in, zoom_triggered
+    if not zoom_triggered:
+        return  # Do nothing if zoom is not triggered
 
+    if zoom_in:
+        if zoom_factor < target_zoom_in:
+            zoom_factor += zoom_speed
+            if zoom_factor >= target_zoom_in:
+                zoom_factor = target_zoom_in
+                zoom_in = False  # Switch to zooming out
+    else:
+        if zoom_factor > target_zoom_out:
+            zoom_factor -= zoom_speed
+            if zoom_factor <= target_zoom_out:
+                zoom_factor = target_zoom_out
+                zoom_triggered = False  # Stop zooming once original position is reached
+
+def ScaleSpriteToZoom(sprite):
+    scaled_sprite = pygame.transform.scale(sprite, (int(sprite.get_width() * zoom_factor), int(sprite.get_height() * zoom_factor)))
+    offset_x = (scaled_sprite.get_width() - sprite.get_width()) // 2
+    offset_y = (scaled_sprite.get_height() - sprite.get_height()) // 2
+    return scaled_sprite, offset_x, offset_y
+
+#?High score functions
 def load_high_score():
     if os.path.exists(HIGH_SCORE_FILE):
         with open(HIGH_SCORE_FILE, "r") as file:

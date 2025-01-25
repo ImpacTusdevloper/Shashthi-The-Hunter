@@ -1,4 +1,4 @@
-import pygame, os
+import pygame
 import GridSystem as grid
 import UI as uIScript
 
@@ -13,7 +13,7 @@ SIZE = min(screenWidth, screenHeight)
 #17x17 grid(diameter = size/divisions)
 gridDiameter = (SIZE-1/10**10)/15
 inputDelay = 0.01
-win = pygame.display.set_mode((SIZE,SIZE), pygame.FULLSCREEN)
+win = pygame.display.set_mode((SIZE,SIZE), pygame.FULLSCREEN, pygame.DOUBLEBUF | pygame.HWSURFACE)
 pygame.display.set_caption("STH")
 #No of nodes = size/diameter
 grid.Initialize(SIZE, (screenWidth, screenHeight), gridDiameter)
@@ -21,23 +21,26 @@ grid.Initialize(SIZE, (screenWidth, screenHeight), gridDiameter)
 import GameObjects as gObj
 player = gObj.player = gObj.CreatePlayer()
 gObj.CreateBoundaries()
+sprites = gObj.sprites
 uI = uIScript.UI(win, gObj)
+showInfo = False
 
-background = gObj.sprites.AnimatedSprite("Background/", 1800, _scale = (SIZE, SIZE))
+background = sprites.AnimatedSprite("Background/", 1800, _scale = (SIZE, SIZE))
 background.RandomizeSprites(); background.randomizeOnEnd = True
 gObj.animations.append(background)
 gObj.highScore = gObj.load_high_score()
 
 # Load and play background music
-musicFiles = [gObj.sprites.resourcePath("Data/Music/cyberpunk-music-277931.mp3"),
-              gObj.sprites.resourcePath("Data/Music/dark-synthwave-spectral-251688.mp3")]
+musicFiles = [sprites.resourcePath("Data/Music/cyberpunk-music-277931.mp3"),
+              sprites.resourcePath("Data/Music/dark-synthwave-spectral-251688.mp3")]
 
 def Main():
     #?Game loop
+    global showInfo
     clock = pygame.time.Clock()
     player.WaitForInput()
-    run = True; num = 0; t = 0; a=3*FPS
-    PlayRandomTrack()
+    run = True; num = 0; t = 0; a=1*FPS
+    ZoomedBack = False
 
     while(run):
         if(player.health <= 0): ResetGame() #?Game Over
@@ -47,9 +50,20 @@ def Main():
             if(event.type == pygame.QUIT): run = False #?Game is trying to close
             if(event.type == pygame.KEYDOWN and num > FPS*inputDelay):
                 num = 0
+                if(event.key == pygame.K_k): run = False #?quit Game key
+                player.Input(event)
+                
                 if(gObj.shake_duration <= 0):
                     gObj.trigger_screen_shake(0.5, 1)
-                player.Input(event)
+                if not ZoomedBack:
+                    #?Game has Started
+                    PlayRandomTrack()
+                    gObj.SmoothZoom(target_in=1.5, target_out=1.0, speed=0.05)
+                    ZoomedBack = True
+                if(event.key == pygame.K_h): showInfo = True
+
+            if(event.type == pygame.KEYUP):
+                if(event.key == pygame.K_h): showInfo = False
                 
         #?SpawnEnemy
         if(len(gObj.enemies) < 4):
@@ -74,6 +88,8 @@ def Main():
             if(player.damageDelay <= 0 and head.position == head.target):
                 player.Collision()
 
+        # Update zoom factor
+        if gObj.zoom_triggered: gObj.UpdateZoom()
         #?Drawing
         DrawWindow()
         uI.draw()
@@ -83,9 +99,14 @@ def Main():
 def DrawWindow():
     win.fill((0, 0, 0))
     shakeX, shakeY = gObj.apply_screen_shake()
-    pos = grid.wTopLeft.wPosition
-    rect = pygame.Rect(pos[0], pos[1], SIZE, SIZE)
-    win.blit(background.curSprite, (rect.x + shakeX, rect.y + shakeY))
+    wTopL = grid.wTopLeft.wPosition
+    rect = pygame.Rect(wTopL[0], wTopL[1], SIZE, SIZE)
+    # Draw background
+    scaled_sprite, offset_x, offset_y = gObj.ScaleSpriteToZoom(background.curSprite)
+    background_center_x = rect.x + shakeX - offset_x + scaled_sprite.get_width() // 2
+    background_center_y = rect.y + shakeY - offset_y + scaled_sprite.get_height() // 2
+    win.blit(scaled_sprite, (rect.x + shakeX - offset_x, rect.y + shakeY - offset_y))
+
     '''#Grid System
     for node in grid.nodes:
         rect = pygame.Rect(node.wPosition[0], node.wPosition[1], gridDiameter/1.01, gridDiameter/1.01)
@@ -102,16 +123,40 @@ def DrawWindow():
             pygame.draw.rect(win, (235, 82, 52), rect)'''
     #Enemies
     for enemy in gObj.enemies:
-        win.blit(enemy.animatedSprite.curSprite, (enemy.rect.x + shakeX, enemy.rect.y + shakeY))
+        scaled_sprite, offset_x, offset_y = gObj.ScaleSpriteToZoom(enemy.animatedSprite.curSprite)
+        enemy_center_x = enemy.rect.x + shakeX - offset_x + scaled_sprite.get_width() // 2
+        enemy_center_y = enemy.rect.y + shakeY - offset_y + scaled_sprite.get_height() // 2
+        win.blit(scaled_sprite, (background_center_x + (enemy_center_x - background_center_x) * gObj.zoom_factor - scaled_sprite.get_width() // 2,
+                                 background_center_y + (enemy_center_y - background_center_y) * gObj.zoom_factor - scaled_sprite.get_height() // 2))
     #Player
-    for part in player.parts:
+    parts = [player.parts[0], player.parts[-1]]
+    for part in parts:
         sprite = part.animatedSprite
-        if(sprite.orientation != part.orientation):
+        if sprite.orientation != part.orientation:
             sprite.CorrectSpriteRotation()
-        win.blit(sprite.curSprite, (part.rect.x + shakeX, part.rect.y + shakeY))
+        scaled_sprite, offset_x, offset_y = gObj.ScaleSpriteToZoom(sprite.curSprite)
+        part_center_x = part.rect.x + shakeX - offset_x + scaled_sprite.get_width() // 2
+        part_center_y = part.rect.y + shakeY - offset_y + scaled_sprite.get_height() // 2
+        win.blit(scaled_sprite, (background_center_x + (part_center_x - background_center_x) * gObj.zoom_factor - scaled_sprite.get_width() // 2,
+                                 background_center_y + (part_center_y - background_center_y) * gObj.zoom_factor - scaled_sprite.get_height() // 2))
+    
+    for part in player.parts[1:-1]:
+        sprite = part.animatedSprite
+        if sprite.orientation != part.orientation:
+            sprite.CorrectSpriteRotation()
+        scaled_sprite, offset_x, offset_y = gObj.ScaleSpriteToZoom(sprite.curSprite)
+        part_center_x = part.rect.x + shakeX - offset_x + scaled_sprite.get_width() // 2
+        part_center_y = part.rect.y + shakeY - offset_y + scaled_sprite.get_height() // 2
+        win.blit(scaled_sprite, (background_center_x + (part_center_x - background_center_x) * gObj.zoom_factor - scaled_sprite.get_width() // 2,
+                                 background_center_y + (part_center_y - background_center_y) * gObj.zoom_factor - scaled_sprite.get_height() // 2))
     
     for fx in gObj.specialFx:
         win.blit(fx.curSprite, (fx.pos[0] + shakeX, fx.pos[1] + shakeY))
+
+    # Draw the info text
+    global showInfo
+    if(showInfo):
+        win.blit(gObj.infoSprite, (wTopL[0] + shakeX, wTopL[1] + shakeY))
     '''pos = grid.NodeFromPos(player.parts[0].target).wPosition
     rect = pygame.Rect(pos[0], pos[1], gridDiameter, gridDiameter)
     pygame.draw.rect(win, (235, 82, 52), rect)'''
@@ -122,14 +167,14 @@ def DrawWindow():
         pygame.draw.rect(win, (168, 50, 60), rect)'''
 
 def ResetGame():
-    global player, gObj, uI
+    global player, gObj, uI, ZoomedBack
     player = gObj.player = gObj.CreatePlayer()  # Reinitialize player
     uI = uIScript.UI(win, gObj)  # Reinitialize UI
     gObj.enemies.clear()
     gObj.update_high_score()
     gObj.score = 0
     pygame.mixer.music.stop()
-    PlayRandomTrack()
+    gObj.SmoothZoom(target_in=1.49, target_out=1.5, speed=100)
     Main()  # Restart the main game loop
 
 

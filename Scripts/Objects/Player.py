@@ -20,8 +20,9 @@ class Player:
         self.damageDelay = 0
         self.speed = baseSpeed
         self.defAnim = self.SetSprite("Head/Default")
-        self.idleAnim = [self.SetSprite("Head/Blinking", 6), self.SetSprite("Head/LookAround", 5), self.SetSprite("Head/Yawn", 5)]
+        self.idleAnim = [self.SetSprite("Head/Blinking", 6), self.SetSprite("Head/LookAround", 4), self.SetSprite("Head/Yawn", 5)]
         self.InitBody()
+        self.WrapUpMovement()
         #Init Idle Animations
         for anim in self.idleAnim:
             anim.loop = False
@@ -55,8 +56,8 @@ class Player:
         if(not self.canMove or self.parts[0].position == self.parts[0].target): return
         #func defines the fraction of movement
         global func; baseSpeed
-        #?Calculating speed based on bodyLength
-        self.speed = baseSpeed + len(self.parts)/5
+        #?Calculating speed based on bodyLength and health
+        self.speed = baseSpeed + len(self.parts)/5 + (9-self.health)/4
         #Rounding to 2 decimals
         self.speed = int(self.speed*100)/100
         if(func == 0): func = minValue
@@ -94,7 +95,6 @@ class Player:
         if(not self.canMove and changedOrientation): self.WaitForInput(False)
 
         if(changedOrientation):
-            k = False
             head.UpdateOrientation(orientation)
             if(head.position == head.target):
                 self.SetTargets()
@@ -136,7 +136,10 @@ class Player:
 
     def WaitForInput(self, do = True):
         if(do): self.canMove = False
-        elif(not do): self.canMove = True; self.WrapUpMovement()
+        elif(not do):
+            self.canMove = True
+            #gObj.SmoothZoom(1.5, 1, 0.05)
+            self.WrapUpMovement()
 
     def WrapUpMovement(self):
         global func
@@ -201,9 +204,7 @@ class Player:
         gObj.animations.append(anim)
     
     def GetBodySprite(self):
-        sprite = self.SetSprite("Body", 15)
+        sprite = self.SetSprite("Body", 30)
         sprite.randomizeOnEnd = True
         sprite.SetRandomPointer()
-        return sprite
-    
-        
+        return sprite       

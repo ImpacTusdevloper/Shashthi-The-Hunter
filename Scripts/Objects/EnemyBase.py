@@ -38,6 +38,7 @@ class Base(gObj.DynObj):
     def Death(self):
         gObj.player.ExtendBody()
         gObj.enemies.remove(self)
+        gObj.SmoothZoom()
 
     def CannotBlockAttack(self):
         playerHead = gObj.player.parts[0]
