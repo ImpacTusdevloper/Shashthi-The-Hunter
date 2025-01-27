@@ -9,7 +9,7 @@ class AnimatedSprite():
     def __init__(self, _path, _tickRate = 1, _obj = None, _scale = (0, 0), _loop = True):
         self.obj = _obj
         self.path = _path
-        self.tickRate = _tickRate
+        self.tickRate = _tickRate + 1
         self.pointer = 0
         self.tick = 0
         self.canAnimate = True

@@ -1,4 +1,5 @@
 import pygame
+import time
 import GridSystem as grid
 import UI as uIScript
 
@@ -7,13 +8,14 @@ pygame.init()
 # Initialize the mixer
 pygame.mixer.init()
 FPS = 60
+FIXED_TIME_STEP = 1 / FPS *2
 infoObject = pygame.display.Info()
 screenWidth = infoObject.current_w; screenHeight = infoObject.current_h
 SIZE = min(screenWidth, screenHeight)
 #17x17 grid(diameter = size/divisions)
 gridDiameter = (SIZE-1/10**10)/15
 inputDelay = 0.01
-win = pygame.display.set_mode((SIZE,SIZE), pygame.FULLSCREEN, pygame.DOUBLEBUF | pygame.HWSURFACE)
+win = pygame.display.set_mode((screenWidth, screenHeight), pygame.FULLSCREEN, pygame.DOUBLEBUF | pygame.HWSURFACE)
 pygame.display.set_caption("STH")
 #No of nodes = size/diameter
 grid.Initialize(SIZE, (screenWidth, screenHeight), gridDiameter)
@@ -40,12 +42,18 @@ def Main():
     clock = pygame.time.Clock()
     player.WaitForInput()
     run = True; num = 0; t = 0; a=1*FPS
+    accumulator = 0.0
+    last_time = time.time()
     ZoomedBack = False
 
     while(run):
         if(player.health <= 0): ResetGame() #?Game Over
-        clock.tick(FPS)
+        current_time = time.time()
+        frame_time = current_time - last_time
+        last_time = current_time
+        accumulator += frame_time
         num+=1
+
         for event in pygame.event.get():
             if(event.type == pygame.QUIT): run = False #?Game is trying to close
             if(event.type == pygame.KEYDOWN and num > FPS*inputDelay):
@@ -58,13 +66,33 @@ def Main():
                 if not ZoomedBack:
                     #?Game has Started
                     PlayRandomTrack()
-                    gObj.SmoothZoom(target_in=1.5, target_out=1.0, speed=0.05)
+                    gObj.SmoothZoom(target_in=1.5, target_out=1.0, speed=0.02)
                     ZoomedBack = True
                 if(event.key == pygame.K_h): showInfo = True
 
             if(event.type == pygame.KEYUP):
                 if(event.key == pygame.K_h): showInfo = False
-                
+        
+        while accumulator >= FIXED_TIME_STEP:
+            #?Main logic
+            player.Movement()
+            #?Animation
+            a-=1
+            if(a < 0 and player.parts[0].animatedSprite == player.defAnim):
+                player.SwitchToIdleAnim()
+                a = gObj.random.randrange(3, 8)*FPS
+            for animation in gObj.animations:
+                animation.Update()
+            # Update zoom factor
+            if gObj.zoom_triggered: gObj.UpdateZoom()
+            gObj.apply_screen_shake()
+            accumulator -= FIXED_TIME_STEP
+        #?Collision Delay
+        if(player.damageDelay > 0):
+            head = player.parts[0]
+            player.damageDelay -= 1
+            if(player.damageDelay <= 0 and head.position == head.target):
+                player.Collision()
         #?SpawnEnemy
         if(len(gObj.enemies) < 4):
             if(len(gObj.enemies)<=2): t-=1
@@ -72,33 +100,16 @@ def Main():
             if(t < 0):
                 gObj.SpawnEnemies.SpawnRandEnemy()
                 t = gObj.random.randrange(1, 5)*FPS
-        #?Main logic
-        player.Movement()
-        #?Animation
-        a-=1
-        if(a < 0 and player.parts[0].animatedSprite == player.defAnim):
-            player.SwitchToIdleAnim()
-            a = gObj.random.randrange(3, 8)*FPS
-        for animation in gObj.animations:
-            animation.Update()
-        #?Collision Delay
-        if(player.damageDelay > 0):
-            head = player.parts[0]
-            player.damageDelay -= 1
-            if(player.damageDelay <= 0 and head.position == head.target):
-                player.Collision()
-
-        # Update zoom factor
-        if gObj.zoom_triggered: gObj.UpdateZoom()
         #?Drawing
         DrawWindow()
         uI.draw()
         pygame.display.update()
+        clock.tick(FPS)
     pygame.quit()
 
 def DrawWindow():
     win.fill((0, 0, 0))
-    shakeX, shakeY = gObj.apply_screen_shake()
+    shakeX, shakeY = gObj.shake_x, gObj.shake_y
     wTopL = grid.wTopLeft.wPosition
     rect = pygame.Rect(wTopL[0], wTopL[1], SIZE, SIZE)
     # Draw background

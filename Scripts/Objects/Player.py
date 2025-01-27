@@ -4,7 +4,7 @@ import random
 
 grid = gObj.grid
 func = 0
-baseSpeed = 10
+baseSpeed = 9
  #!should be between 0 and 100
 
 minValue = 1/10**2

@@ -12,6 +12,8 @@ infoSprite.set_alpha(240)
 #Screen shake parameters
 shake_duration = 0
 shake_intensity = 8
+shake_x = 0
+shake_y = 0
 #Zoom parameters
 zoom_factor = 1.49
 target_zoom_in = 1.5
@@ -23,6 +25,7 @@ zoom_triggered = False
 lFRB = [(-1, 0), (0, -1), (1, 0), (0, 1)]
 
 score = 0
+fixedTime = 0
 
 HIGH_SCORE_FILE = sprites.resourcePath("Data/high_score.json")
 highScore = 0
@@ -109,20 +112,21 @@ def CreateBoundaries():
 
 #?screen shake functions
 def apply_screen_shake():
-    global shake_duration
+    global shake_duration, shake_x, shake_y
     if shake_duration > 0:
         shake_duration -= 1
-        shake_x = random.randint(-shake_intensity, shake_intensity)
-        shake_y = random.randint(-shake_intensity, shake_intensity)
-        return shake_x, shake_y
-    return 0, 0
+        _shake_x = random.randint(-shake_intensity, shake_intensity)
+        _shake_y = random.randint(-shake_intensity, shake_intensity)
+        shake_x, shake_y = _shake_x, _shake_y
+    elif(shake_duration < 0):
+        shake_x, shake_y =  0, 0
 
 def trigger_screen_shake(duration, intensity = 8):
     global shake_duration, shake_intensity
     shake_intensity = intensity
     shake_duration = duration
 #?Zoom functions
-def SmoothZoom(target_in=1.1, target_out=1.0, speed=0.03):
+def SmoothZoom(target_in=1.1, target_out=1.0, speed=0.02):
     global target_zoom_in, target_zoom_out, zoom_speed, zoom_in, zoom_triggered
     target_zoom_in = target_in
     target_zoom_out = target_out
@@ -135,15 +139,17 @@ def UpdateZoom():
     if not zoom_triggered:
         return  # Do nothing if zoom is not triggered
 
+    zoom_change = zoom_speed
+
     if zoom_in:
         if zoom_factor < target_zoom_in:
-            zoom_factor += zoom_speed
+            zoom_factor += zoom_change
             if zoom_factor >= target_zoom_in:
                 zoom_factor = target_zoom_in
                 zoom_in = False  # Switch to zooming out
     else:
         if zoom_factor > target_zoom_out:
-            zoom_factor -= zoom_speed
+            zoom_factor -= zoom_change
             if zoom_factor <= target_zoom_out:
                 zoom_factor = target_zoom_out
                 zoom_triggered = False  # Stop zooming once original position is reached
