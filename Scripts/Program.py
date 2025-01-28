@@ -8,7 +8,6 @@ pygame.init()
 # Initialize the mixer
 pygame.mixer.init()
 FPS = 60
-FIXED_TIME_STEP = 1 / FPS *2
 infoObject = pygame.display.Info()
 screenWidth = infoObject.current_w; screenHeight = infoObject.current_h
 SIZE = min(screenWidth, screenHeight)
@@ -48,10 +47,7 @@ def Main():
 
     while(run):
         if(player.health <= 0): ResetGame() #?Game Over
-        current_time = time.time()
-        frame_time = current_time - last_time
-        last_time = current_time
-        accumulator += frame_time
+        deltaTime = clock.tick(FPS) / 1000.0
         num+=1
 
         for event in pygame.event.get():
@@ -62,35 +58,35 @@ def Main():
                 player.Input(event)
                 
                 if(gObj.shake_duration <= 0):
-                    gObj.trigger_screen_shake(0.5, 1)
+                    gObj.trigger_screen_shake(0.01, 1)
                 if not ZoomedBack:
                     #?Game has Started
                     PlayRandomTrack()
-                    gObj.SmoothZoom(target_in=1.5, target_out=1.0, speed=0.02)
+                    gObj.SmoothZoom(target_in=1.5, target_out=1.0, speed=0.8)
                     ZoomedBack = True
                 if(event.key == pygame.K_h): showInfo = True
 
             if(event.type == pygame.KEYUP):
                 if(event.key == pygame.K_h): showInfo = False
         
-        while accumulator >= FIXED_TIME_STEP:
-            #?Main logic
-            player.Movement()
-            #?Animation
-            a-=1
-            if(a < 0 and player.parts[0].animatedSprite == player.defAnim):
-                player.SwitchToIdleAnim()
-                a = gObj.random.randrange(3, 8)*FPS
-            for animation in gObj.animations:
-                animation.Update()
-            # Update zoom factor
-            if gObj.zoom_triggered: gObj.UpdateZoom()
-            gObj.apply_screen_shake()
-            accumulator -= FIXED_TIME_STEP
+        #?Main logic
+        player.Movement(deltaTime)
+        #?Animation
+        a-=1
+        if(a < 0 and player.parts[0].animatedSprite == player.defAnim):
+            player.SwitchToIdleAnim()
+            a = gObj.random.randrange(3, 8)*FPS
+        for animation in gObj.animations:
+            animation.Update(deltaTime)
+        # Update zoom factor
+        if gObj.zoom_triggered: gObj.UpdateZoom(deltaTime)
+        elif(gObj.zoom_factor != gObj.target_zoom_out):
+            gObj.SmoothZoom(target_in=0.99, target_out=1.0, speed=100)
+        gObj.apply_screen_shake(deltaTime)
         #?Collision Delay
         if(player.damageDelay > 0):
             head = player.parts[0]
-            player.damageDelay -= 1
+            player.damageDelay -= 1/deltaTime
             if(player.damageDelay <= 0 and head.position == head.target):
                 player.Collision()
         #?SpawnEnemy
@@ -104,7 +100,6 @@ def Main():
         DrawWindow()
         uI.draw()
         pygame.display.update()
-        clock.tick(FPS)
     pygame.quit()
 
 def DrawWindow():

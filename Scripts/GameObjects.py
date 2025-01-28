@@ -111,10 +111,10 @@ def CreateBoundaries():
             boundaries.append(StaticObj(node.position, grid.diameter))
 
 #?screen shake functions
-def apply_screen_shake():
+def apply_screen_shake(deltaTime):
     global shake_duration, shake_x, shake_y
     if shake_duration > 0:
-        shake_duration -= 1
+        shake_duration -= 1 * deltaTime/10
         _shake_x = random.randint(-shake_intensity, shake_intensity)
         _shake_y = random.randint(-shake_intensity, shake_intensity)
         shake_x, shake_y = _shake_x, _shake_y
@@ -126,7 +126,7 @@ def trigger_screen_shake(duration, intensity = 8):
     shake_intensity = intensity
     shake_duration = duration
 #?Zoom functions
-def SmoothZoom(target_in=1.1, target_out=1.0, speed=0.02):
+def SmoothZoom(target_in=1.1, target_out=1.0, speed=0.5):
     global target_zoom_in, target_zoom_out, zoom_speed, zoom_in, zoom_triggered
     target_zoom_in = target_in
     target_zoom_out = target_out
@@ -134,12 +134,12 @@ def SmoothZoom(target_in=1.1, target_out=1.0, speed=0.02):
     zoom_in = True  # Start by zooming in
     zoom_triggered = True  # Set the zoom trigger
 
-def UpdateZoom():
+def UpdateZoom(deltaTime):
     global zoom_factor, target_zoom_in, target_zoom_out, zoom_speed, zoom_in, zoom_triggered
     if not zoom_triggered:
         return  # Do nothing if zoom is not triggered
 
-    zoom_change = zoom_speed
+    zoom_change = zoom_speed * deltaTime
 
     if zoom_in:
         if zoom_factor < target_zoom_in:

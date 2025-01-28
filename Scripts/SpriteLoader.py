@@ -27,13 +27,13 @@ class AnimatedSprite():
                 self.sprites.append(Loader(self.path + sprite, self.scale))
         self.curSprite = self.sprites[self.pointer]
     
-    def Update(self):
+    def Update(self, deltaTime):
         if(not self.canAnimate): return
         if(self.obj != None):
             self.CorrectSpriteRotation()
         if(len(self.sprites) <=1):
             return
-        self.tick += 1
+        self.tick += 1*deltaTime*50
         if(self.tick >= self.tickRate):
 
             self.tick = 0
@@ -74,11 +74,11 @@ class SpecialEffect(AnimatedSprite):
     def __init__(self, _path, _pos, _tickRate=1, _scale=(0, 0), _loop=False):
         super().__init__(_path, _tickRate, _scale=_scale, _loop=_loop)
         self.pos = _pos
-    def Update(self):
+    def Update(self, deltaTime):
         if(self.pointer >= len(self.sprites)-1):
             gObj.specialFx.remove(self)
             gObj.animations.remove(self)
-        return super().Update()
+        return super().Update(deltaTime)
 
 def Loader(path, _scale = (0, 0)):
     global scale

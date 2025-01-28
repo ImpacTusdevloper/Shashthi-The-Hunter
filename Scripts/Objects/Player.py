@@ -4,7 +4,7 @@ import random
 
 grid = gObj.grid
 func = 0
-baseSpeed = 9
+baseSpeed = 2
  #!should be between 0 and 100
 
 minValue = 1/10**2
@@ -31,7 +31,7 @@ class Player:
 
     def InitBody(self):
         #Init body
-        bodyLength = 3
+        bodyLength = 4
         orientation = (0, -1)
 
         #Make parts
@@ -52,16 +52,16 @@ class Player:
         self.parts.append(tail)
 
     #!Logic
-    def Movement(self):
+    def Movement(self, deltaTime):
         if(not self.canMove or self.parts[0].position == self.parts[0].target): return
         #func defines the fraction of movement
         global func; baseSpeed
         #?Calculating speed based on bodyLength and health
-        self.speed = baseSpeed + len(self.parts)/5 + (9-self.health)/4
+        self.speed = baseSpeed + len(self.parts)/22 + (9-self.health)/10
         #Rounding to 2 decimals
         self.speed = int(self.speed*100)/100
         if(func == 0): func = minValue
-        func = gObj.AddFunc(func, self.speed/100)
+        func = gObj.AddFunc(func, self.speed * deltaTime)
         #Rounding to 2 decimals
         func = int(func*100)/100
         #Reset movement
@@ -163,7 +163,7 @@ class Player:
         if(timesDamaged >= 1): return
         self.health -= 1
         self.WaitForInput()
-        gObj.trigger_screen_shake(10)
+        gObj.trigger_screen_shake(0.05)
         timesDamaged += 1
 
     def ExtendBody(self):
